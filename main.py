@@ -9,7 +9,7 @@ host = "incontrol-sys.com"  # hard-coded
 port = 22
 
 
-VIDEO_URL = "https://stream.cawamo.com/hof/hof4.m3u8"
+VIDEO_URL = "https://stream.cawamo.com/hof/hof1.m3u8"
 LAT = "31.9702383"
 LON = "34.8145154"
 # SFTP
@@ -26,11 +26,11 @@ maxVal = 1
 
 
 def upload_to_server(img_to_upload):
-    transport.connect(username=THEUSERNAME, password=THEPASSWORD)
     transport = paramiko.Transport((host, port))
+    transport.connect(username=THEUSERNAME, password=THEPASSWORD)
     sftp = paramiko.SFTPClient.from_transport(transport)
     path = './human_detactor/' + img_to_upload  # hard-coded
-    sftp.put(img_to_upload)
+    sftp.put(img_to_upload,path)
     sftp.close()
     transport.close()
     return 'Done'
@@ -67,7 +67,7 @@ while cap.isOpened():
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     # Pass frame to our body classifier
-    bodies = body_classifier.detectMultiScale(gray)
+    bodies = body_classifier.detectMultiScale(gray, 1.1, 1)
     i = len(bodies)
     # Extract bounding boxes for any bodies identified
     person = 1
@@ -82,13 +82,12 @@ while cap.isOpened():
         datetime_end = datetime.now()
         minutes_diff = (datetime_end - datetime_start).total_seconds() / 60.0
         message = f'found {i} pedestrians, allowed max of {maxVal} pedestrians'
-
         if minutes_diff > 1:
             print(message)
             img_name = 'hof1_' + datetime_end.strftime("%m-%d-%Y_%H_%M_%S") + '.jpg'
             cv2.imwrite(img_name, gray)
             uploaded = upload_to_server(img_name)
-            if uploaded == 'done':
+            if uploaded == 'Done':
                 print(f'{minutes_diff} minutes of high pedestrians traffic has passed, sending alert')
                 send_message_pedestrians(message, img_name)
                 datetime_start = datetime.now()
