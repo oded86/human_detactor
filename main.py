@@ -2,20 +2,42 @@ import cv2
 from datetime import datetime
 import os.path
 from telegram.ext import Updater
+import paramiko
 
 # Configuration
+host = "incontrol-sys.com"  # hard-coded
+port = 22
 
-VIDEO_URL = "https://stream.cawamo.com/hof/hof9.m3u8"
+
+VIDEO_URL = "https://stream.cawamo.com/hof/hof4.m3u8"
 LAT = "31.9702383"
 LON = "34.8145154"
-file_to_open = os.path.join("hog_xml", "haarcascade_fullbody.xml")
+# SFTP
+THEUSERNAME = ""
+THEPASSWORD = ""
 
+# Path to XML
+
+file_to_open = os.path.join("hog_xml", "haarcascade_fullbody.xml")
 body_classifier = cv2.CascadeClassifier(file_to_open)
+# Number of allowed People
+
 maxVal = 1
 
 
+def upload_to_server(img_to_upload):
+    transport.connect(username=THEUSERNAME, password=THEPASSWORD)
+    transport = paramiko.Transport((host, port))
+    sftp = paramiko.SFTPClient.from_transport(transport)
+    path = './human_detactor/' + img_to_upload  # hard-coded
+    sftp.put(img_to_upload)
+    sftp.close()
+    transport.close()
+    return 'Done'
+
+
 def send_message_pedestrians(message_text, pic1):
-    pic = "https://incontrol-sys.com/rishon_images/" + pic1
+    pic = "https://incontrol-sys.com/human_detactor/" + pic1
     print("starting sendMessage func..................")
     print(LAT)
     print(LON)
@@ -45,7 +67,7 @@ while cap.isOpened():
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     # Pass frame to our body classifier
-    bodies = body_classifier.detectMultiScale(gray, 1.06, 1)
+    bodies = body_classifier.detectMultiScale(gray)
     i = len(bodies)
     # Extract bounding boxes for any bodies identified
     person = 1
@@ -64,10 +86,12 @@ while cap.isOpened():
         if minutes_diff > 1:
             print(message)
             img_name = 'hof1_' + datetime_end.strftime("%m-%d-%Y_%H_%M_%S") + '.jpg'
-            cv2.imwrite("rishon_images/" + img_name, gray)
-            print(f'{minutes_diff} minutes of high pedestrians traffic has passed, sending alert')
-            send_message_pedestrians(message, img_name)
-            datetime_start = datetime.now()
+            cv2.imwrite(img_name, gray)
+            uploaded = upload_to_server(img_name)
+            if uploaded == 'done':
+                print(f'{minutes_diff} minutes of high pedestrians traffic has passed, sending alert')
+                send_message_pedestrians(message, img_name)
+                datetime_start = datetime.now()
 
     cv2.imshow('Pedestrians', gray)
     if cv2.waitKey(1) == 13:  # 13 is the Enter Key
