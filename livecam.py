@@ -4,10 +4,14 @@
 from datetime import datetime, timedelta, timezone
 import urllib
 import m3u8
+import numpy as np
 import streamlink
 import cv2  # openCV
 import time
 import os
+
+from imutils.object_detection import non_max_suppression
+
 
 def get_stream(url):
     """
@@ -84,12 +88,18 @@ def dl_stream(url, filename, chunks):
 
 
 def detect(frame):
-    bounding_box_cordinates, weights = HOGCV.detectMultiScale(frame, winStride=(4, 4), padding=(8, 8), scale=1.03)
+    bounding_box_cordinates, weights = HOGCV.detectMultiScale(frame, winStride=(4, 4), padding=(8, 8), scale=1.01)
 
     person = 1
-    for x, y, w, h in bounding_box_cordinates:
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.putText(frame, f'person {person}', (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+    #for x, y, w, h in bounding_box_cordinates:
+    #    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    #    cv2.putText(frame, f'person {person}', (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+    #    person += 1
+    rects = np.array([[x, y, x + w, y + h] for (x, y, w, h) in bounding_box_cordinates])
+    pick = non_max_suppression(rects, probs=None, overlapThresh=0.65)
+    for (xA, yA, xB, yB) in pick:
+        cv2.rectangle(frame, (xA, yA), (xB, yB), (0, 255, 0), 2)
+        cv2.putText(frame, f'person {person}', (xA, yA), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
         person += 1
 
     # cv2.putText(frame, 'Status : Detecting ', (40, 40), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255, 0, 0), 2)
@@ -113,9 +123,10 @@ def openCVProcessing(saved_video_file):
         # openCV processing goes here
         #
         cv2.imshow('frame', frame)  # Show the frame
-        frame1 = detect(frame)
+
         frameId = int(round(capture.get(1)))
-        if frameId % 10 == 0:
+        if frameId % 600 == 0:
+            frame1 = detect(frame)
             cv2.imshow('frame', frame1)  # Show the frame
 
         # Shown in a new window, To exit, push q on the keyboard
@@ -128,8 +139,8 @@ def openCVProcessing(saved_video_file):
 
 
 tempFile = "temp.ts"  # files are format ts, open cv can view them
-videoURL = "https://www.youtube.com/watch?v=Wi26Wkk6_S0"
+videoURL = "rishon_rotshield.mp4"
 HOGCV = cv2.HOGDescriptor()
 HOGCV.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
-dl_stream(videoURL, tempFile, 3)
-openCVProcessing(tempFile)
+#dl_stream(videoURL, tempFile, 3)
+openCVProcessing(videoURL)
