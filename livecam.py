@@ -88,7 +88,7 @@ def dl_stream(url, filename, chunks):
 
 
 def detect(frame):
-    bounding_box_cordinates, weights = HOGCV.detectMultiScale(frame, winStride=(4, 4), padding=(8, 8), scale=1.01)
+    bounding_box_cordinates, weights = HOGCV.detectMultiScale(frame, winStride=(4, 4), padding=(8, 8), scale=1.09)
 
     person = 1
     #for x, y, w, h in bounding_box_cordinates:
@@ -122,11 +122,12 @@ def openCVProcessing(saved_video_file):
 
         # openCV processing goes here
         #
-        cv2.imshow('frame', frame)  # Show the frame
+        #cv2.imshow('frame', frame)  # Show the frame
 
         frameId = int(round(capture.get(1)))
-        if frameId % 600 == 0:
-            frame1 = detect(frame)
+        if frameId % 60 == 0:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame1 = detect(gray)
             cv2.imshow('frame', frame1)  # Show the frame
 
         # Shown in a new window, To exit, push q on the keyboard
@@ -139,6 +140,7 @@ def openCVProcessing(saved_video_file):
 
 
 tempFile = "temp.ts"  # files are format ts, open cv can view them
+#videoURL = "https://stream.cawamo.com/hof/hof10.m3u8"
 videoURL = "rishon_rotshield.mp4"
 HOGCV = cv2.HOGDescriptor()
 HOGCV.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
